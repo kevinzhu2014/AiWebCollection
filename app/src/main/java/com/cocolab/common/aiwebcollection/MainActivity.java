@@ -1,5 +1,7 @@
 package com.cocolab.common.aiwebcollection;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -15,12 +17,15 @@ import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import com.cocolab.common.aiwebcollection.activity.BrowerActivity;
 import com.cocolab.common.aiwebcollection.adapter.SubscribeListAdapter;
 import com.cocolab.common.aiwebcollection.model.Subscribe;
 import com.cocolab.common.aiwebcollection.pool.QDThreadPool;
 import com.cocolab.common.aiwebcollection.utils.HtmlStorageHelper;
 import com.cocolab.common.aiwebcollection.utils.HtmlStorageStateListener;
+import com.cocolab.common.aiwebcollection.utils.PublicData;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,7 +83,21 @@ public class MainActivity extends AppCompatActivity
                     return;
                 }
                 //打开浏览器，浏览网页
+                try {
+                    String htmlFilePath = PublicData.getInstance().mAppPath + "/" + "download" + "/" + contentId + "/" + "index.html";
+                    Intent intent = new Intent(MainActivity.this, BrowerActivity.class);
+                    String content_url = "file://" + htmlFilePath;
+                    intent.putExtra("web_url", content_url);
+                    startActivity(intent);
 
+                    /*Uri uri = Uri.parse("content://com.android.htmlfileprovider/" + htmlFilePath);
+                    Intent intent2 = new Intent();
+                    intent2.setData(uri);
+                    intent2.setClassName("com.android.htmlviewer", "com.android.htmlviewer.HTMLViewerActivity");
+                    startActivity(intent2);*/
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         });
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
@@ -142,7 +161,7 @@ public class MainActivity extends AppCompatActivity
                             .setAction("Action", null).show();
                 }
             });
-            helper.saveHtml("http://www.qq.com");
+            helper.saveHtml("http://blog.csdn.net/yuyuyuyuy/article/details/6547430");
         }
 
         drawer.closeDrawer(GravityCompat.START);
@@ -153,8 +172,8 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         Menu rootMenu = navigationView.getMenu();
         if (rootMenu != null) {
-            rootMenu.add(0, 1, 0, "百度主页");
-            rootMenu.add(0, 2, 0, "QQ主页");
+            rootMenu.add(0, 1, 0, "保存网页");
+            //rootMenu.add(0, 2, 0, "QQ主页");
         }
     }
 
