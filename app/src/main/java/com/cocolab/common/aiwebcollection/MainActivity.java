@@ -1,11 +1,11 @@
 package com.cocolab.common.aiwebcollection;
 
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -14,40 +14,70 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.cocolab.common.aiwebcollection.activity.BrowerActivity;
 import com.cocolab.common.aiwebcollection.activity.QRScanActivity;
 import com.cocolab.common.aiwebcollection.adapter.SubscribeListAdapter;
 import com.cocolab.common.aiwebcollection.model.Subscribe;
 import com.cocolab.common.aiwebcollection.pool.QDThreadPool;
 import com.cocolab.common.aiwebcollection.utils.ActionUtilProcess;
 import com.cocolab.common.aiwebcollection.utils.HtmlStorageHelper;
-import com.cocolab.common.aiwebcollection.utils.HtmlStorageStateListener;
 import com.cocolab.common.aiwebcollection.utils.PublicData;
-import com.pacific.barcode.QRActivity;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    private static final int MSG_WHAT_REFRESH_LIST = 1;
+    private static final int MSG_WHAT_RELOAD_LIST = 2;
+
     private ListView listView;
 
     private HtmlStorageHelper helper;
     private List<Subscribe> subscribeList = new ArrayList<>();
     private SubscribeListAdapter adapter;
 
+    private static WeakHandler mHandler;
+
+    class WeakHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case MSG_WHAT_REFRESH_LIST:
+                    if(adapter == null) {
+                        adapter = new SubscribeListAdapter(MainActivity.this, subscribeList);
+                        listView.setAdapter(adapter);
+                    }else{
+                        adapter.notifyDataSetChanged();
+                    }
+                    break;
+                case MSG_WHAT_RELOAD_LIST:
+                    reloadWebCollectionData();
+                    break;
+            }
+        }
+    };
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mHandler = new WeakHandler();
         helper = new HtmlStorageHelper(this);
 
         initView();
-        loadWebCollectionData();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        reloadWebCollectionData();
     }
 
     private void initView() {
@@ -58,8 +88,8 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                //打开扫描
+                startActivity(new Intent(MainActivity.this, QRScanActivity.class));
             }
         });
 
@@ -87,13 +117,18 @@ public class MainActivity extends AppCompatActivity
                 }
                 //打开浏览器，浏览网页
                 String htmlFilePath = PublicData.getInstance().mAppPath + "/" + "download" + "/" + contentId + "/" + "index.html";
-                ActionUtilProcess.openUrl(MainActivity.this, htmlFilePath);
+                ActionUtilProcess.openUrl(MainActivity.this, "file://" + htmlFilePath);
             }
         });
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                return false;
+                if(subscribeList.size() <= position){
+                    return false;
+                }
+                confirmDelete(position);
+
+                return true;
             }
         });
     }
@@ -111,7 +146,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
+        //getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
@@ -137,24 +172,6 @@ public class MainActivity extends AppCompatActivity
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         int id = item.getItemId();
 
-        if (id == 1) {
-            startActivity(new Intent(MainActivity.this, QRScanActivity.class));
-            /*helper.setHtmlStorageStateListener(new HtmlStorageStateListener() {
-                @Override
-                public void onSuccess() {
-                    Snackbar.make(drawer, "保存网页成功", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-
-                @Override
-                public void onFail(String message) {
-                    Snackbar.make(drawer, "保存网页失败", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                }
-            });
-            helper.saveHtml("http://blog.csdn.net/yuyuyuyuy/article/details/6547430");*/
-        }
-
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -163,12 +180,12 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         Menu rootMenu = navigationView.getMenu();
         if (rootMenu != null) {
-            rootMenu.add(0, 1, 0, "扫描");
-            //rootMenu.add(0, 2, 0, "QQ主页");
+            rootMenu.add(1, 1, 0, "我的主页");
+            rootMenu.add(2, 2, 1, "关于我们");
         }
     }
 
-    private void loadWebCollectionData(){
+    private void reloadWebCollectionData(){
         QDThreadPool.getInstance(QDThreadPool.PRIORITY_MEDIUM).submit(new Runnable() {
             @Override
             public void run() {
@@ -176,11 +193,34 @@ public class MainActivity extends AppCompatActivity
                 if(subscribes != null){
                     subscribeList.clear();
                     subscribeList.addAll(subscribes);
-
-                    adapter = new SubscribeListAdapter(MainActivity.this, subscribeList);
-                    listView.setAdapter(adapter);
+                    mHandler.sendEmptyMessage(MSG_WHAT_REFRESH_LIST);
                 }
             }
         });
+    }
+
+    private void confirmDelete(final int position){
+        if(position > subscribeList.size() -1){
+            return;
+        }
+        final Subscribe subscribe = subscribeList.get(position);
+        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(this);
+        builder.setTitle("确认删除");
+        builder.setMessage(subscribe.title);
+        builder.setNegativeButton("取消", null);
+        builder.setPositiveButton("确定", new DialogInterface.OnClickListener(){
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                QDThreadPool.getInstance(QDThreadPool.PRIORITY_MEDIUM).submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        helper.deleteHtml(subscribe.contentId);
+                        //删除后更新UI
+                        mHandler.sendEmptyMessage(MSG_WHAT_REFRESH_LIST);
+                    }
+                });
+            }
+        });
+        builder.show();
     }
 }

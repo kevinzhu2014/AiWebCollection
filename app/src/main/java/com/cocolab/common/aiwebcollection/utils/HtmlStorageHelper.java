@@ -10,7 +10,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Environment;
 
 import com.androidquery.AQuery;
 import com.androidquery.callback.AjaxCallback;
@@ -19,6 +18,9 @@ import com.cocolab.common.aiwebcollection.model.Subscribe;
 
 public class HtmlStorageHelper {
     public static final String ENCODE = "utf-8";
+
+    public static final String DOWNLOAD = "download";
+    public static final String IMAGES = "images";
 
     private PublicData pd;
     private AQuery aq;
@@ -34,7 +36,7 @@ public class HtmlStorageHelper {
         mDB = context.openOrCreateDatabase(dbDir + "/" + "data.db", Context.MODE_PRIVATE, null);
         mDB.execSQL("create table if not exists download_html(_id INTEGER PRIMARY KEY AUTOINCREMENT, content_id TEXT NOT NULL, title TEXT NOT NULL)");
 
-        mDownloadPath = pd.mAppPath + "/" + "download";
+        mDownloadPath = pd.mAppPath + "/" + DOWNLOAD;
         File dir_file = new File(mDownloadPath);
         if (!dir_file.exists())
             dir_file.mkdir();
@@ -93,7 +95,8 @@ public class HtmlStorageHelper {
         while (matcher.find()) {
             String picUrl = matcher.group(0);
             downloadPic(id, picUrl);
-            matcher.appendReplacement(sb, formatPath(picUrl));
+            String picFilePath = mDownloadPath + "/" + id + "/" + IMAGES + "/" + formatImagePath(picUrl);
+            matcher.appendReplacement(sb, picFilePath);
         }
         matcher.appendTail(sb);
         html = sb.toString();
@@ -102,8 +105,12 @@ public class HtmlStorageHelper {
     }
 
     private void downloadPic(String id, String url) {
-        File pic_file = new File(mDownloadPath + "/" + id + "/" + formatPath(url));
-        aq.download(url, pic_file, new AjaxCallback<File>() {
+        File picFileDir = new File(mDownloadPath + "/" + id + "/" + IMAGES);
+        if(!picFileDir.exists()){
+            picFileDir.mkdir();
+        }
+        File picFile = new File(picFileDir, formatImagePath(url));
+        aq.download(url, picFile, new AjaxCallback<File>() {
             @Override
             public void callback(String url, final File file, AjaxStatus status) {
             }
@@ -206,9 +213,9 @@ public class HtmlStorageHelper {
         }
     }
 
-    private String formatPath(String path) {
+    private String formatImagePath(String path) {
         if (path != null && path.length() > 0) {
-            path = path.replace("\\", "_");
+            /*path = path.replace("\\", "_");
             path = path.replace("/", "_");
             path = path.replace(":", "_");
             path = path.replace("*", "_");
@@ -216,7 +223,15 @@ public class HtmlStorageHelper {
             path = path.replace("\"", "_");
             path = path.replace("<", "_");
             path = path.replace("|", "_");
-            path = path.replace(">", "_");
+            path = path.replace(">", "_");*/
+
+            int lastDotIndex = path.lastIndexOf(".");
+            if(lastDotIndex > 0){
+                String suffix = path.substring(lastDotIndex);
+                String fileName = path.substring(0, lastDotIndex);
+                String md5 = MD5Builder.build(fileName, ENCODE);
+                path = md5 + "." + suffix;
+            }
         }
         return path;
     }
