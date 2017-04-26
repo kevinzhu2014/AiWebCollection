@@ -3,8 +3,12 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/AiWebCollection.iml" filepath="$PROJECT_DIR$/AiWebCollection.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AiWebCollection.iml" filepath="$PROJECT_DIR$/AiWebCollection.iml" />
+      <module fileurl="file://$PROJECT_DIR$/androidQuery/androidQuery.iml" filepath="$PROJECT_DIR$/androidQuery/androidQuery.iml" />
       <module fileurl="file://$PROJECT_DIR$/androidQuery/androidQuery.iml" filepath="$PROJECT_DIR$/androidQuery/androidQuery.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/zxing-barcode/zxing-barcode.iml" filepath="$PROJECT_DIR$/zxing-barcode/zxing-barcode.iml" />
       <module fileurl="file://$PROJECT_DIR$/zxing-barcode/zxing-barcode.iml" filepath="$PROJECT_DIR$/zxing-barcode/zxing-barcode.iml" />
     </modules>
   </component>
