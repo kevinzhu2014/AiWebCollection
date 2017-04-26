@@ -21,23 +21,10 @@ public class ActionUtilProcess {
         String processUrl = url;
         if(url.startsWith("file://")) {
             //本地文件，读取后直接显示html内容
-            processUrl = url.substring(7);
-            try {
-                //尝试HtmlViewer打开
-                Uri uri = Uri.parse("content://com.android.htmlfileprovider/" + processUrl);
-                Intent intent2 = new Intent();
-                intent2.setData(uri);
-                intent2.setClassName("com.android.htmlviewer", "com.android.htmlviewer.HTMLViewerActivity");
-                context.startActivity(intent2);
-            } catch (Exception e) {
-                e.printStackTrace();
-
-                //尝试webview来打开
-                Intent intent = new Intent(context, BrowerActivity.class);
-                String content_url = "file://" + processUrl;
-                intent.putExtra("web_url", content_url);
-                context.startActivity(intent);
-            }
+            //尝试webview来打开
+            Intent intent = new Intent(context, BrowerActivity.class);
+            intent.putExtra("web_url", processUrl);
+            context.startActivity(intent);
         }else{
             Intent intent = new Intent(context, BrowerActivity.class);
             intent.putExtra("web_url", processUrl);

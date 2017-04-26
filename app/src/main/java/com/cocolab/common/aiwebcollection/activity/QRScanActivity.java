@@ -2,6 +2,7 @@ package com.cocolab.common.aiwebcollection.activity;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -50,6 +51,7 @@ public class QRScanActivity extends Activity<QRModel> implements IQRActivity {
             public void onResult(QRResult qrResult) {
                 //直接打开BrowserActivity
                 ActionUtilProcess.openUrl(QRScanActivity.this, qrResult.getResult().getText());
+                QRScanActivity.this.finish();
             }
         });
     }
@@ -78,10 +80,12 @@ public class QRScanActivity extends Activity<QRModel> implements IQRActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && requestCode == CODE_PICK_IMAGE) {
             String[] columns = {MediaStore.Images.Media.DATA};
-            Cursor cursor = getContentResolver().query(data.getData(), columns, null, null, null);
+            String path = data.getDataString().replace("%3A", ":");
+            Cursor cursor = getContentResolver().query(Uri.parse(path), columns, null, null, null);
             if (cursor.moveToFirst()) {
+                String imgPath = cursor.getString(cursor.getColumnIndex(columns[0]));
                 Observable
-                        .just(cursor.getString(cursor.getColumnIndex(columns[0])))
+                        .just(imgPath)
                         .observeOn(Schedulers.from(cameraManager.getExecutor()))
                         .compose(this.<String>bindUntilEvent(ActivityEvent.PAUSE))
                         .map(new Func1<String, QRResult>() {
@@ -140,5 +144,10 @@ public class QRScanActivity extends Activity<QRModel> implements IQRActivity {
     @Override
     public void setHook(boolean hook) {
         cameraManager.setHook(hook);
+    }
+
+    @Override
+    public void switchLight(boolean on){
+        cameraManager.switchLight(on);
     }
 }

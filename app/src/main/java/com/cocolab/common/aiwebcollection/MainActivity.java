@@ -216,6 +216,7 @@ public class MainActivity extends AppCompatActivity
                     public void run() {
                         helper.deleteHtml(subscribe.contentId);
                         //删除后更新UI
+                        subscribeList.remove(position);
                         mHandler.sendEmptyMessage(MSG_WHAT_REFRESH_LIST);
                     }
                 });

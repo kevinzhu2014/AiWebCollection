@@ -14,4 +14,6 @@ public interface IQRActivity {
     void restartCapture();
 
     void setHook(boolean hook);
+
+    void switchLight(boolean on);
 }

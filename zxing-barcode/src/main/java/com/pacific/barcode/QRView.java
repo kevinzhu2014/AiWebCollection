@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -40,16 +41,33 @@ public class QRView extends ActivityView<Activity> implements SurfaceHolder.Call
                     ((IQRActivity)activity).setHook(true);
                 }
                 Intent galleryIntent = new Intent();
-                if (Build.VERSION_CODES.KITKAT >= Build.VERSION.SDK_INT) {
-                    galleryIntent.setAction(Intent.ACTION_OPEN_DOCUMENT);
-                } else {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
                     galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
+                } else {
+                    galleryIntent.setAction(Intent.ACTION_OPEN_DOCUMENT);
+                    galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
                 }
                 galleryIntent.setType("image/*");
                 Intent wrapperIntent = Intent.createChooser(galleryIntent, "选择二维码图片");
                 activity.startIntentForResult(wrapperIntent, QRActivity.CODE_PICK_IMAGE, null);
             }
         });
+        qrCodeView.setLightOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(activity instanceof IQRActivity) {
+                    CheckBox checkBox = (CheckBox) v;
+                    if(checkBox.isChecked()) {
+                        //打开闪光灯
+                        ((IQRActivity) activity).switchLight(true);
+                    }else{
+                        //关闭闪光灯
+                        ((IQRActivity) activity).switchLight(false);
+                    }
+                }
+            }
+        });
+
         surfaceView.getHolder().addCallback(this);
     }
 

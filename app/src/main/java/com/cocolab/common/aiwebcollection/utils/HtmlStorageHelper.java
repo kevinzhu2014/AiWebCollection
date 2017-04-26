@@ -20,7 +20,7 @@ public class HtmlStorageHelper {
     public static final String ENCODE = "utf-8";
 
     public static final String DOWNLOAD = "download";
-    public static final String IMAGES = "images";
+    public static final String FILES = "files";
 
     private PublicData pd;
     private AQuery aq;
@@ -33,13 +33,13 @@ public class HtmlStorageHelper {
         pd = PublicData.getInstance();
         aq = new AQuery(context);
         String dbDir = pd.mAppPath;
-        mDB = context.openOrCreateDatabase(dbDir + "/" + "data.db", Context.MODE_PRIVATE, null);
+        mDB = context.openOrCreateDatabase(dbDir + "/" + "web_page.db", Context.MODE_PRIVATE, null);
         mDB.execSQL("create table if not exists download_html(_id INTEGER PRIMARY KEY AUTOINCREMENT, content_id TEXT NOT NULL, title TEXT NOT NULL)");
 
         mDownloadPath = pd.mAppPath + "/" + DOWNLOAD;
-        File dir_file = new File(mDownloadPath);
-        if (!dir_file.exists())
-            dir_file.mkdir();
+        File dirFile = new File(mDownloadPath);
+        if (!dirFile.exists())
+            dirFile.mkdir();
     }
 
 
@@ -95,7 +95,7 @@ public class HtmlStorageHelper {
         while (matcher.find()) {
             String picUrl = matcher.group(0);
             downloadPic(id, picUrl);
-            String picFilePath = mDownloadPath + "/" + id + "/" + IMAGES + "/" + formatImagePath(picUrl);
+            String picFilePath = mDownloadPath + "/" + id + "/" + FILES + "/" + formatImagePath(picUrl);
             matcher.appendReplacement(sb, picFilePath);
         }
         matcher.appendTail(sb);
@@ -105,7 +105,7 @@ public class HtmlStorageHelper {
     }
 
     private void downloadPic(String id, String url) {
-        File picFileDir = new File(mDownloadPath + "/" + id + "/" + IMAGES);
+        File picFileDir = new File(mDownloadPath + "/" + id + "/" + FILES);
         if(!picFileDir.exists()){
             picFileDir.mkdir();
         }
@@ -193,7 +193,7 @@ public class HtmlStorageHelper {
 
     public void deleteHtml(String id) {
         mDB.delete("download_html", "content_id=?", new String[]{id});
-        File dir_file = new File(mDownloadPath + id);
+        File dir_file = new File(mDownloadPath + "/" + id);
         deleteFile(dir_file);
     }
 
@@ -215,19 +215,13 @@ public class HtmlStorageHelper {
 
     private String formatImagePath(String path) {
         if (path != null && path.length() > 0) {
-            /*path = path.replace("\\", "_");
-            path = path.replace("/", "_");
-            path = path.replace(":", "_");
-            path = path.replace("*", "_");
-            path = path.replace("?", "_");
-            path = path.replace("\"", "_");
-            path = path.replace("<", "_");
-            path = path.replace("|", "_");
-            path = path.replace(">", "_");*/
-
+            int pathLen = path.length();
             int lastDotIndex = path.lastIndexOf(".");
             if(lastDotIndex > 0){
-                String suffix = path.substring(lastDotIndex);
+                String suffix = path.substring(lastDotIndex + 1);
+                if(suffix.length() >= 4){
+                    suffix = "jpg";
+                }
                 String fileName = path.substring(0, lastDotIndex);
                 String md5 = MD5Builder.build(fileName, ENCODE);
                 path = md5 + "." + suffix;

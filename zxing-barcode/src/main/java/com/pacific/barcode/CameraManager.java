@@ -3,6 +3,7 @@ package com.pacific.barcode;
 import android.content.Context;
 import android.graphics.Point;
 import android.hardware.Camera;
+import android.os.Build;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -278,5 +279,50 @@ public class CameraManager extends BaseCameraManager implements Camera.AutoFocus
                         Log.e("CameraManager", "getCodeValue() failed .");
                     }
                 });
+    }
+
+    @Override
+    public void switchLight(boolean on){
+        if(on){
+            turnLightOnCamera(camera);
+        }else{
+            turnLightOffCamera(camera);
+        }
+    }
+
+    /**
+     * 通过设置Camera打开闪光灯
+     *
+     * @param mCamera
+     */
+    public void turnLightOnCamera(Camera mCamera) {
+        Camera.Parameters parameters = camera.getParameters();
+        List<String> flashModes = parameters.getSupportedFlashModes();
+        String flashMode = parameters.getFlashMode();
+        if (!Camera.Parameters.FLASH_MODE_TORCH.equals(flashMode)) {
+            // 开启闪光灯
+            if (flashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
+                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                mCamera.setParameters(parameters);
+            }
+        }
+    }
+
+    /**
+     * 通过设置Camera关闭闪光灯
+     *
+     * @param mCamera
+     */
+    public void turnLightOffCamera(Camera mCamera) {
+        Camera.Parameters parameters = mCamera.getParameters();
+        List<String> flashModes = parameters.getSupportedFlashModes();
+        String flashMode = parameters.getFlashMode();
+        if (!Camera.Parameters.FLASH_MODE_OFF.equals(flashMode)) {
+            // 关闭闪光灯
+            if (flashModes.contains(Camera.Parameters.FLASH_MODE_OFF)) {
+                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                mCamera.setParameters(parameters);
+            }
+        }
     }
 }

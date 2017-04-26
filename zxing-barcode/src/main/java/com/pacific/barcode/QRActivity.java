@@ -125,4 +125,9 @@ public class QRActivity extends Activity<QRModel> implements IQRActivity{
     public void setHook(boolean hook) {
         cameraManager.setHook(hook);
     }
+
+    @Override
+    public void switchLight(boolean on) {
+
+    }
 }

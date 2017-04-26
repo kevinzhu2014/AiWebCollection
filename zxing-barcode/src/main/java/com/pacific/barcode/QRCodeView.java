@@ -102,6 +102,7 @@ public class QRCodeView extends RelativeLayout {
                 }
             }
         });
+
         Animation animation = AnimationUtils.loadAnimation(getContext(), R.anim.exlore_line_move);
         animation.setInterpolator(new LinearInterpolator());
         findViewById(R.id.img_scan_line).setAnimation(animation);

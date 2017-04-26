@@ -1,5 +1,6 @@
 package com.cocolab.common.aiwebcollection.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -14,6 +15,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.cocolab.common.aiwebcollection.MainActivity;
 import com.cocolab.common.aiwebcollection.pool.QDThreadPool;
 import com.cocolab.common.aiwebcollection.utils.HtmlStorageHelper;
 import com.cocolab.common.aiwebcollection.utils.HtmlStorageStateListener;
@@ -81,6 +83,7 @@ public class BrowerActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, 0x0001, 0, "缓存到本地");
+        menu.add(0, 0x0002, 1, "扫描二维码");
         //getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
@@ -95,13 +98,18 @@ public class BrowerActivity extends AppCompatActivity {
                 case 0x0001:
                     saveToLocal();
                     break;
+                case 0x0002:
+                    //打开扫描
+                    startActivity(new Intent(BrowerActivity.this, QRScanActivity.class));
+                    break;
             }
         }
         return false;
     }
 
     private void saveToLocal(){
-        if(TextUtils.isEmpty(url)){
+        String nowUrl = webView.getUrl();
+        if(TextUtils.isEmpty(nowUrl)){
             return;
         }
         helper.setHtmlStorageStateListener(new HtmlStorageStateListener() {
@@ -117,7 +125,7 @@ public class BrowerActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
-        helper.saveHtml(url);
+        helper.saveHtml(nowUrl);
     }
 
     private void initWebViewSetting(){

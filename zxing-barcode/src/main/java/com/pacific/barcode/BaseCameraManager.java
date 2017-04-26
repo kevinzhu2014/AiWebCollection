@@ -117,4 +117,6 @@ public abstract class BaseCameraManager {
     public interface OnResultListener {
         void onResult(QRResult qrResult);
     }
+
+    public void switchLight(boolean on){}
 }
