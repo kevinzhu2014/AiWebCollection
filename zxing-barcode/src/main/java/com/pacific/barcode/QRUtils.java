@@ -30,6 +30,8 @@ public class QRUtils {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(url, options);
+
+            //获取缩略图
             if (options.outWidth >= 1920) {
                 options.inSampleSize = 6;
             } else if (options.outWidth >= 1280) {
@@ -40,9 +42,13 @@ public class QRUtils {
                 options.inSampleSize = 3;
             }
             options.inJustDecodeBounds = false;
-            Bitmap bitmap = BitmapFactory.decodeFile(url);
-            if (bitmap == null) return null;
-            int width = bitmap.getWidth(), height = bitmap.getHeight();
+            Bitmap bitmap = BitmapFactory.decodeFile(url, options);
+            if (bitmap == null){
+                return null;
+            }
+
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
             int[] pixels = new int[width * height];
             bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
             Result result = decode(new RGBLuminanceSource(width, height, pixels), reader);
@@ -53,6 +59,9 @@ public class QRUtils {
             return null;
         } catch (Exception e) {
             Log.e("decode exception", e.toString());
+            return null;
+        } catch (OutOfMemoryError err) {
+            Log.e("decode exception", err.toString());
             return null;
         }
     }

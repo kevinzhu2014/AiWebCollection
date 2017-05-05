@@ -9,6 +9,7 @@ import android.provider.MediaStore;
 import android.view.SurfaceHolder;
 
 import com.cocolab.common.aiwebcollection.utils.ActionUtilProcess;
+import com.cocolab.common.aiwebcollection.utils.ImageSelectorUtil;
 import com.google.zxing.MultiFormatReader;
 import com.pacific.barcode.BaseCameraManager;
 import com.pacific.barcode.CameraManager;
@@ -79,11 +80,9 @@ public class QRScanActivity extends Activity<QRModel> implements IQRActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && requestCode == CODE_PICK_IMAGE) {
-            String[] columns = {MediaStore.Images.Media.DATA};
-            String path = data.getDataString().replace("%3A", ":");
-            Cursor cursor = getContentResolver().query(Uri.parse(path), columns, null, null, null);
-            if (cursor.moveToFirst()) {
-                String imgPath = cursor.getString(cursor.getColumnIndex(columns[0]));
+            Uri uri = data.getData();
+            if (uri != null) {
+                String imgPath = ImageSelectorUtil.getPath(this, uri);
                 Observable
                         .just(imgPath)
                         .observeOn(Schedulers.from(cameraManager.getExecutor()))
@@ -98,11 +97,13 @@ public class QRScanActivity extends Activity<QRModel> implements IQRActivity {
                         .subscribe(new Action1<QRResult>() {
                             @Override
                             public void call(QRResult qrResult) {
-                                model.resultDialog(qrResult);
+                                //model.resultDialog(qrResult);
+                                //直接打开BrowserActivity
+                                ActionUtilProcess.openUrl(QRScanActivity.this, qrResult.getResult().getText());
+                                QRScanActivity.this.finish();
                             }
                         });
             }
-            cursor.close();
         }
     }
 
@@ -132,7 +133,7 @@ public class QRScanActivity extends Activity<QRModel> implements IQRActivity {
     }
 
     @Override
-    public void onSurfaceDestroyed(){
+    public void onSurfaceDestroyed() {
         cameraManager.releaseCamera();
     }
 
@@ -147,7 +148,7 @@ public class QRScanActivity extends Activity<QRModel> implements IQRActivity {
     }
 
     @Override
-    public void switchLight(boolean on){
+    public void switchLight(boolean on) {
         cameraManager.switchLight(on);
     }
 }
