@@ -5,17 +5,19 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.design.widget.Snackbar;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
+import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 
-import com.cocolab.common.aiwebcollection.MainActivity;
+import com.cocolab.common.aiwebcollection.R;
 import com.cocolab.common.aiwebcollection.pool.QDThreadPool;
 import com.cocolab.common.aiwebcollection.utils.HtmlStorageHelper;
 import com.cocolab.common.aiwebcollection.utils.HtmlStorageStateListener;
@@ -30,10 +32,13 @@ import java.io.IOException;
  * Created by zhushengui on 2017/4/20.
  */
 
-public class BrowerActivity extends AppCompatActivity {
-    private WebView webView;
+public class BrowerActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener{
+    private WebView mWebView;
+    private ProgressBar mProgressBar;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
     private String url;
     private HtmlStorageHelper helper;
+    private ActionBar actionBar;
 
     private static Handler mHandler = new Handler(){
         @Override
@@ -46,7 +51,7 @@ public class BrowerActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        ActionBar actionBar = getSupportActionBar();
+        actionBar = getSupportActionBar();
         if(actionBar != null){
             actionBar.setHomeButtonEnabled(true);
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -54,27 +59,36 @@ public class BrowerActivity extends AppCompatActivity {
 
         url = getIntent().getStringExtra("web_url");
 
-        webView = new WebView(this);
-        ViewGroup.LayoutParams lps = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        webView.setLayoutParams(lps);
+        setContentView(R.layout.activity_brower);
+        initViews();
         initWebViewSetting();
 
-        setContentView(webView);
+        helper = new HtmlStorageHelper(this);
 
+        loadWebPageAsync();
+    }
+
+    private void initViews(){
+        mWebView = (WebView) this.findViewById(R.id.webView);
+        mProgressBar = (ProgressBar) this.findViewById(R.id.progressBar);
+        mSwipeRefreshLayout = ((SwipeRefreshLayout)this.findViewById(R.id.swipeRefreshLayout));
+        mSwipeRefreshLayout.setColorSchemeColors(this.getResources().getColor(R.color.colorAccent));
+        mSwipeRefreshLayout.setOnRefreshListener(this);
+    }
+
+    private void loadWebPageAsync(){
         QDThreadPool.getInstance(QDThreadPool.PRIORITY_HIGH).submit(new Runnable() {
             @Override
             public void run() {
                 loadWebPage();
             }
         });
-
-        helper = new HtmlStorageHelper(this);
     }
 
     @Override
     public void onBackPressed(){
-        if(webView.canGoBack()){
-            webView.goBack();
+        if(mWebView.canGoBack()){
+            mWebView.goBack();
         }else{
             super.onBackPressed();
         }
@@ -108,20 +122,20 @@ public class BrowerActivity extends AppCompatActivity {
     }
 
     private void saveToLocal(){
-        String nowUrl = webView.getUrl();
+        String nowUrl = mWebView.getUrl();
         if(TextUtils.isEmpty(nowUrl)){
             return;
         }
         helper.setHtmlStorageStateListener(new HtmlStorageStateListener() {
             @Override
             public void onSuccess() {
-                Snackbar.make(webView, "保存网页成功", Snackbar.LENGTH_LONG)
+                Snackbar.make(mWebView, "保存网页成功", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
 
             @Override
             public void onFail(String message) {
-                Snackbar.make(webView, "保存网页失败", Snackbar.LENGTH_LONG)
+                Snackbar.make(mWebView, "保存网页失败", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
@@ -129,40 +143,108 @@ public class BrowerActivity extends AppCompatActivity {
     }
 
     private void initWebViewSetting(){
-        WebSettings webSettings = webView.getSettings();
-        webView.getSettings().setDefaultTextEncodingName("utf-8");
-        //webSettings.setJavaScriptEnabled(true); //支持JavaScript参数
+        WebSettings webSettings = mWebView.getSettings();
+        mWebView.getSettings().setDefaultTextEncodingName("utf-8");
+        webSettings.setJavaScriptEnabled(true); //支持JavaScript参数
+        webSettings.setBuiltInZoomControls(false); // 放大缩放按钮
+        // 如果访问的页面中有JavaScript，则WebView必须设置支持JavaScript
+        webSettings.setJavaScriptEnabled(true);
+        // 设置可以支持缩放
+        webSettings.setSupportZoom(true);
+        // 扩大比例的缩放
         webSettings.setUseWideViewPort(true);
+        // 自适应屏幕
+        webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
         webSettings.setLoadWithOverviewMode(true);
-        webSettings.setSupportZoom(true);  //支持放大缩小
-        //webSettings.setBuiltInZoomControls(true); //显示缩放按钮
 
+        setWebViewCache();
+
+        mWebView.setWebChromeClient(new MyChromeClient());
+
+        mWebView.setWebViewClient(new WebViewClient(){
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if(url.startsWith("http://") || url.startsWith("http://")){
+                    if(NetworkUtil.isNetworkAvailable(BrowerActivity.this)){
+                        mWebView.loadUrl(url);
+                    }else{
+                        //不做任何处理
+                    }
+                }else{
+                    //本地地址
+                    //mWebView.loadUrl(url);
+                    return false;
+                }
+                return true;
+            }
+        });
+    }
+
+    @Override
+    public void onRefresh() {
+        mSwipeRefreshLayout.setRefreshing(true);
+        loadWebPageAsync();
+    }
+
+    // 设置加载进度
+    public class MyChromeClient extends android.webkit.WebChromeClient
+    {
+        @Override
+        public void onProgressChanged(WebView view, int newProgress)
+        {
+            mProgressBar.setProgress(newProgress);
+            if (newProgress == 100)
+            {
+                mProgressBar.setVisibility(View.GONE);
+            }
+            else
+            {
+                mProgressBar.setVisibility(View.VISIBLE);
+
+            }
+            super.onProgressChanged(view, newProgress);
+        }
+
+        @Override
+        public void onReceivedTitle(WebView view, String title)
+        {
+            super.onReceivedTitle(view, title);
+            if(actionBar != null){
+                actionBar.setTitle(title);
+            }
+        }
+
+    }
+
+    /**
+     * 设置WebView缓存参数
+     */
+    private void setWebViewCache(){
+        WebSettings webSettings = mWebView.getSettings();
+        webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+        if (NetworkUtil.isNetworkAvailable(this))
+        {
+            webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);// 根据cache-control决定是否从网络上取数据。
+        }
+        else
+        {
+            webSettings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);// 只要本地有，无论是否过期，或者no-cache，都使用缓存中的数据
+        }
         String cacheDirPath = this.getFilesDir().getAbsolutePath() + "/" + "webcache"; //缓存路径
         if(url != null && url.startsWith("file://")) {
             int dirEndIndex = url.lastIndexOf("/");
             String WebDir = url.substring(7, dirEndIndex);
             cacheDirPath = WebDir + "/" + "webcache"; //缓存路径
         }
-        webSettings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);  //缓存模式
         webSettings.setAppCachePath(cacheDirPath); //设置缓存路径
         webSettings.setAppCacheEnabled(true); //开启缓存功能
-        webView.setWebViewClient(new WebViewClient(){
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if(url.startsWith("http://") || url.startsWith("http://")){
-                    if(NetworkUtil.isNetworkAvailable(BrowerActivity.this)){
-                        webView.loadUrl(url);
-                    }else{
-                        //不做任何处理
-                    }
-                }else{
-                    //本地地址
-                    //webView.loadUrl(url);
-                    return false;
-                }
-                return true;
-            }
-        });
+
+        // 开启 DOM storage API 功能
+        webSettings.setDomStorageEnabled(true);
+        // 开启 database storage API 功能
+        webSettings.setDatabaseEnabled(true);
+        // 设置数据库缓存路径
+        webSettings.setDatabasePath(cacheDirPath);
     }
 
     private void loadWebPage(){
@@ -194,14 +276,16 @@ public class BrowerActivity extends AppCompatActivity {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    webView.loadDataWithBaseURL("file://", htmlContentSB.toString(), "text/html", "utf-8", "about:blank");
+                    mSwipeRefreshLayout.setRefreshing(false);
+                    mWebView.loadDataWithBaseURL("file://", htmlContentSB.toString(), "text/html", "utf-8", "about:blank");
                 }
             });
         }else {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    webView.loadUrl(url);
+                    mSwipeRefreshLayout.setRefreshing(false);
+                    mWebView.loadUrl(url);
                 }
             });
         }

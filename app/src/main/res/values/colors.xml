@@ -5,4 +5,9 @@
     <color name="colorAccent">#FF4081</color>
 
     <color name="color_ccccccc">#CCCCCC</color>
+    <!-- 网页加载进度条颜色变化 -->
+    <color name="progress1">#B9DEF5</color>
+    <color name="progress2">#CDE7F8</color>
+    <color name="progress3">#E7F3FC</color>
+
 </resources>

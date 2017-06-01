@@ -9,12 +9,17 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
@@ -30,12 +35,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, SwipeRefreshLayout.OnRefreshListener {
 
     private static final int MSG_WHAT_REFRESH_LIST = 1;
     private static final int MSG_WHAT_RELOAD_LIST = 2;
 
-    private ListView listView;
+    private RecyclerView listView;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     private HtmlStorageHelper helper;
     private List<Subscribe> subscribeList = new ArrayList<>();
@@ -49,10 +55,10 @@ public class MainActivity extends AppCompatActivity
             super.handleMessage(msg);
             switch (msg.what){
                 case MSG_WHAT_REFRESH_LIST:
-                    if(adapter == null) {
-                        adapter = new SubscribeListAdapter(MainActivity.this, subscribeList);
-                        listView.setAdapter(adapter);
-                    }else{
+                    if(mSwipeRefreshLayout != null){
+                        mSwipeRefreshLayout.setRefreshing(false);
+                    }
+                    if(adapter != null) {
                         adapter.notifyDataSetChanged();
                     }
                     break;
@@ -104,10 +110,20 @@ public class MainActivity extends AppCompatActivity
 
         initNavigationItems();
 
-        listView = (ListView) findViewById(R.id.listView);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeRefreshLayout);
+        mSwipeRefreshLayout.setColorSchemeColors(this.getResources().getColor(R.color.colorAccent));
+        mSwipeRefreshLayout.setOnRefreshListener(this);
+
+        listView = (RecyclerView) findViewById(R.id.listView);
+        LinearLayoutManager llm = new LinearLayoutManager(this);
+        llm.setOrientation(LinearLayoutManager.VERTICAL);
+        listView.setLayoutManager(llm);
+        adapter = new SubscribeListAdapter(MainActivity.this, subscribeList);
+        listView.setAdapter(adapter);
+
+        adapter.setOnItemClickListener(new SubscribeListAdapter.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(View view, int position) {
                 if(subscribeList.size() <= position){
                     return;
                 }
@@ -120,9 +136,9 @@ public class MainActivity extends AppCompatActivity
                 ActionUtilProcess.openUrl(MainActivity.this, "file://" + htmlFilePath);
             }
         });
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        adapter.setOnItemLongClickListener(new SubscribeListAdapter.OnItemLongClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+            public boolean onItemLongClick(View view, int position) {
                 if(subscribeList.size() <= position){
                     return false;
                 }
@@ -132,6 +148,13 @@ public class MainActivity extends AppCompatActivity
             }
         });
     }
+
+
+    @Override
+    public void onRefresh() {
+        reloadWebCollectionData();
+    }
+
 
     @Override
     public void onBackPressed() {
@@ -186,6 +209,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void reloadWebCollectionData(){
+        mSwipeRefreshLayout.setRefreshing(true);
         QDThreadPool.getInstance(QDThreadPool.PRIORITY_MEDIUM).submit(new Runnable() {
             @Override
             public void run() {

@@ -1,14 +1,14 @@
 package com.cocolab.common.aiwebcollection.adapter;
 
 import android.content.Context;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.TextView;
 
 import com.cocolab.common.aiwebcollection.R;
 import com.cocolab.common.aiwebcollection.model.Subscribe;
+import com.cocolab.common.aiwebcollection.viewholder.SubscribleViewHolder;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ import java.util.List;
  * Created by zhushengui on 2017/4/19.
  */
 
-public class SubscribeListAdapter extends BaseAdapter{
+public class SubscribeListAdapter extends BaseRecyclerViewAdapter<SubscribleViewHolder>{
     private Context mContext;
     private List<Subscribe> datas;
     private LayoutInflater inflater;
@@ -29,13 +29,18 @@ public class SubscribeListAdapter extends BaseAdapter{
     }
 
     @Override
-    public int getCount() {
-        return datas == null ? 0 : datas.size();
+    public SubscribleViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view =  inflater.inflate(R.layout.subscribe_list_item_layout, null);
+        return new SubscribleViewHolder(view);
     }
 
     @Override
-    public Subscribe getItem(int position) {
-        return datas == null ? null : datas.get(position);
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        if(datas != null && datas.size() > position){
+            Subscribe subscribe = datas.get(position);
+            bindItemViewListener(holder.itemView, position);
+            ((SubscribleViewHolder)holder).bindView(subscribe);
+        }
     }
 
     @Override
@@ -43,35 +48,8 @@ public class SubscribeListAdapter extends BaseAdapter{
         return position;
     }
 
-    public View onCreateView(){
-        if(inflater == null){
-            inflater = LayoutInflater.from(mContext);
-        }
-        return inflater.inflate(R.layout.subscribe_list_item_layout, null);
-    }
-
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        ViewHolder holder = null;
-        if(convertView == null){
-            convertView = onCreateView();
-            holder = new ViewHolder(convertView);
-            convertView.setTag(holder);
-        }else{
-            holder = (ViewHolder) convertView.getTag();
-        }
-        //设置
-        if(datas != null && datas.size() > position){
-            holder.title.setText(datas.get(position).title);
-        }
-
-        return convertView;
-    }
-
-    class ViewHolder {
-        private TextView title;
-        public ViewHolder(View v){
-            title = (TextView) v.findViewById(R.id.title);
-        }
+    public int getItemCount() {
+        return datas == null ? 0 : datas.size();
     }
 }
