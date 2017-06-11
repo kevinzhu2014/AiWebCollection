@@ -1,7 +1,6 @@
 package com.cocolab.common.aiwebcollection.adapter;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,11 +34,11 @@ public class SubscribeListAdapter extends BaseRecyclerViewAdapter<SubscribleView
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(SubscribleViewHolder holder, int position) {
+        super.onBindViewHolder(holder, position);
         if(datas != null && datas.size() > position){
             Subscribe subscribe = datas.get(position);
-            bindItemViewListener(holder.itemView, position);
-            ((SubscribleViewHolder)holder).bindView(subscribe);
+            holder.bindView(subscribe);
         }
     }
 

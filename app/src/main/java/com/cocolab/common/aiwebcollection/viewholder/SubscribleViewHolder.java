@@ -8,11 +8,13 @@ import com.cocolab.common.aiwebcollection.R;
 import com.cocolab.common.aiwebcollection.model.Subscribe;
 
 public class SubscribleViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public View llItem;
     private TextView title;
     private Subscribe subscribe;
 
     public SubscribleViewHolder(View v) {
         super(v);
+        llItem = v.findViewById(R.id.ll_item);
         title = (TextView) v.findViewById(R.id.title);
     }
 
@@ -20,7 +22,6 @@ public class SubscribleViewHolder extends RecyclerView.ViewHolder implements Vie
         this.subscribe = subscribe;
         if(subscribe != null){
             title.setText(subscribe.title);
-            title.setOnClickListener(this);
         }
     }
 
